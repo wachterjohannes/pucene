@@ -61,7 +61,7 @@ class BoolInterpreter implements InterpreterInterface
 
         return $math->multiply(
             $expression,
-            new Coord($element->getScoringElements(), $this->interpreterPool, $scoring->getSchema(), $scoring->getConnection(), $math)
+            new Coord($element->getScoringElements(), $this->interpreterPool, $scoring->getQueryBuilder(), $math)
         );
     }
 
@@ -86,7 +86,7 @@ class BoolInterpreter implements InterpreterInterface
      *
      * @return InterpreterInterface
      */
-    private function getInterpreter(ElementInterface $element)
+    protected function getInterpreter(ElementInterface $element)
     {
         return $this->interpreterPool->get(get_class($element));
     }

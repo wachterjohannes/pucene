@@ -44,38 +44,47 @@ class PuceneQueryBuilder extends QueryBuilder
 
     public function selectFrequency(string $field, string $term)
     {
-        $frequencyName = 'frequency' . ucfirst($field) . ucfirst($term);
-        if (in_array($frequencyName, $this->joins)) {
-            return $frequencyName . '.frequency';
+        return $this->math()->count($this->math()->variable($this->joinTerm($field, $term) . '.id'));
+    }
+
+    public function joinToken(string $field)
+    {
+        $tokenName = 'token' . ucfirst($field);
+        $tokenName = trim(preg_replace('/\W/', '_', $tokenName), '_');
+        if (in_array($tokenName, $this->joins)) {
+            return $tokenName;
         }
 
-        $fieldName = $this->joinField($field);
-        $this->leftJoin(
-            $fieldName,
-            $this->schema->getFieldTermsTableName(),
-            $frequencyName,
-            $frequencyName . '.field_id = ' . $fieldName . '.id AND ' . $frequencyName . '.term = \'' . $term . '\''
+        $condition = sprintf(
+            '%1$s.document_id = %2$s.id AND %1$s.field_name = \'%3$s\'',
+            $tokenName,
+            $this->documentAlias,
+            $field
         );
 
-        $this->joins[] = $frequencyName;
+        $this->leftJoin($this->documentAlias, $this->schema->getTokensTableName(), $tokenName, $condition);
 
-        return $frequencyName . '.frequency';
+        return $this->joins[] = $tokenName;
     }
 
     public function joinTerm(string $field, string $term)
     {
         $termName = 'term' . ucfirst($field) . ucfirst($term);
+        $termName = trim(preg_replace('/\W/', '_', $termName), '_');
         if (in_array($termName, $this->joins)) {
             return $termName;
         }
 
-        $fieldName = $this->joinField($field);
-        $this->leftJoin(
-            $fieldName,
-            $this->schema->getTokensTableName(),
+        $condition = sprintf(
+            '%1$s.document_id = %2$s.id AND %1$s.field_name = \'%3$s\' AND %4$s.term = \'%5$s\'',
             $termName,
-            $termName . '.field_id = ' . $fieldName . '.id AND ' . $termName . '.term = \'' . $term . '\''
+            $this->documentAlias,
+            $field,
+            $termName,
+            $term
         );
+
+        $this->leftJoin($this->documentAlias, $this->schema->getTokensTableName(), $termName, $condition);
 
         return $this->joins[] = $termName;
     }

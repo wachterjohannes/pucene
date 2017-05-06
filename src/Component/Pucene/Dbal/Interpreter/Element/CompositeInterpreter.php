@@ -5,6 +5,7 @@ namespace Pucene\Component\Pucene\Dbal\Interpreter\Element;
 use Pucene\Component\Pucene\Compiler\Element\BoolElement;
 use Pucene\Component\Pucene\Compiler\Element\CompositeElement;
 use Pucene\Component\Pucene\Compiler\ElementInterface;
+use Pucene\Component\Pucene\Dbal\Interpreter\InterpreterInterface;
 use Pucene\Component\Pucene\Dbal\Interpreter\PuceneQueryBuilder;
 use Pucene\Component\Pucene\Dbal\ScoringAlgorithm;
 
@@ -27,9 +28,7 @@ class CompositeInterpreter extends BoolInterpreter
         // TODO optimization (e.g. or terms can use the same join)
 
         foreach ($element->getElements() as $innerElement) {
-            $interpreter = $this->interpreterPool->get(get_class($innerElement));
-
-            $expression->add($interpreter->interpret($innerElement, $queryBuilder));
+            $expression->add($this->getInterpreter($innerElement)->interpret($innerElement, $queryBuilder, $element->getOperator()));
         }
 
         return $expression;
