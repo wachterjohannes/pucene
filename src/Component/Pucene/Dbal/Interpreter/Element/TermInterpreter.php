@@ -15,9 +15,13 @@ class TermInterpreter implements InterpreterInterface
      *
      * @param TermElement $element
      */
-    public function interpret(ElementInterface $element, PuceneQueryBuilder $queryBuilder)
+    public function interpret(ElementInterface $element, PuceneQueryBuilder $queryBuilder, string $operator = null)
     {
         $expr = $queryBuilder->expr();
+
+        if ($operator === 'or') {
+            return $expr->eq($queryBuilder->joinToken($element->getField()) . '.term', "'" . $element->getTerm() . "'");
+        }
 
         return $expr->isNotNull(
             $queryBuilder->joinTerm($element->getField(), $element->getTerm()) . '.id'

@@ -67,6 +67,7 @@ class PuceneSchema
             ['id'],
             ['onDelete' => 'CASCADE']
         );
+        $fields->addIndex(['name']);
     }
 
     private function createTokensTable()
@@ -75,15 +76,17 @@ class PuceneSchema
 
         $fields = $this->schema->createTable($this->tableNames['tokens']);
         $fields->addColumn('id', 'integer', ['autoincrement' => true]);
-        $fields->addColumn('field_id', 'integer');
+        $fields->addColumn('document_id', 'string', ['length' => 255]);
+        $fields->addColumn('field_name', 'string', ['length' => 255]);
         $fields->addColumn('term', 'string', ['length' => 255]);
         $fields->addColumn('start_offset', 'integer');
         $fields->addColumn('end_offset', 'integer');
         $fields->addColumn('position', 'integer');
         $fields->addColumn('type', 'string', ['length' => 255]);
         $fields->setPrimaryKey(['id']);
-        $fields->addForeignKeyConstraint($this->tableNames['fields'], ['field_id'], ['id'], ['onDelete' => 'CASCADE']);
+        $fields->addForeignKeyConstraint($this->tableNames['documents'], ['document_id'], ['id'], ['onDelete' => 'CASCADE']);
         $fields->addForeignKeyConstraint($this->tableNames['terms'], ['term'], ['term']);
+        $fields->addIndex(['field_name']);
     }
 
     private function createTermsTable()
@@ -120,12 +123,14 @@ class PuceneSchema
 
         $fields = $this->schema->createTable($this->tableNames['field_terms']);
         $fields->addColumn('id', 'integer', ['autoincrement' => true]);
-        $fields->addColumn('field_id', 'integer');
+        $fields->addColumn('document_id', 'string', ['length' => 255]);
+        $fields->addColumn('field_name', 'string', ['length' => 255]);
         $fields->addColumn('term', 'string', ['length' => 255]);
         $fields->addColumn('frequency', 'integer');
         $fields->setPrimaryKey(['id']);
-        $fields->addForeignKeyConstraint($this->tableNames['fields'], ['field_id'], ['id'], ['onDelete' => 'CASCADE']);
+        $fields->addForeignKeyConstraint($this->tableNames['documents'], ['document_id'], ['id'], ['onDelete' => 'CASCADE']);
         $fields->addForeignKeyConstraint($this->tableNames['terms'], ['term'], ['term']);
+        $fields->addIndex(['field_name']);
     }
 
     public function toSql(AbstractPlatform $platform)

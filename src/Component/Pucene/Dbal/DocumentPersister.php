@@ -41,7 +41,8 @@ class DocumentPersister
         $terms = [];
         $documentTerms = [];
         foreach ($fields as $field) {
-            $fieldId = $this->insertField($document, $field);
+            $fieldNorm = ElasticsearchPrecision::fieldNorm($field->getNumberOfTerms());
+            $fieldId = $this->insertField($document, $field, $fieldNorm);
 
             $fieldTerms = [];
             foreach ($field->getTokens() as $token) {
@@ -59,14 +60,15 @@ class DocumentPersister
                 ++$fieldTerms[$token->getEncodedTerm()];
                 ++$documentTerms[$token->getEncodedTerm()];
 
-                $this->insertToken($fieldId, $token->getEncodedTerm(), $token);
+                $this->insertToken($document->getId(), $field->getName(), $token->getEncodedTerm(), $token);
             }
 
             foreach ($fieldTerms as $term => $frequency) {
                 $this->connection->insert(
                     $this->schema->getFieldTermsTableName(),
                     [
-                        'field_id' => $fieldId,
+                        'document_id' => $document->getId(),
+                        'field_name' => $field->getName(),
                         'term' => $term,
                         'frequency' => $frequency,
                     ]
@@ -112,9 +114,11 @@ class DocumentPersister
      * @param Document $document
      * @param Field $field
      *
+     * @param float $fieldNorm
+     *
      * @return string
      */
-    protected function insertField(Document $document, Field $field)
+    protected function insertField(Document $document, Field $field, float $fieldNorm)
     {
         $this->connection->insert(
             $this->schema->getFieldsTableName(),
@@ -122,7 +126,7 @@ class DocumentPersister
                 'document_id' => $document->getId(),
                 'name' => $field->getName(),
                 'number_of_terms' => $field->getNumberOfTerms(),
-                'field_norm' => ElasticsearchPrecision::fieldNorm($field->getNumberOfTerms()),
+                'field_norm' => $fieldNorm,
             ]
         );
         $fieldId = $this->connection->lastInsertId();
@@ -152,16 +156,18 @@ class DocumentPersister
     }
 
     /**
-     * @param int $fieldId
+     * @param string $documentId
+     * @param string $fieldName
      * @param int $termId
      * @param Token $token
      */
-    protected function insertToken($fieldId, $termId, Token $token)
+    protected function insertToken($documentId, $fieldName, $termId, Token $token)
     {
         $this->connection->insert(
             $this->schema->getTokensTableName(),
             [
-                'field_id' => $fieldId,
+                'document_id' => $documentId,
+                'field_name' => $fieldName,
                 'term' => $termId,
                 'start_offset' => $token->getStartOffset(),
                 'end_offset' => $token->getEndOffset(),

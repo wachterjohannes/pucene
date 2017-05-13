@@ -3,6 +3,7 @@
 namespace Pucene\Component\Pucene\Dbal;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Query\QueryBuilder;
 use Pucene\Component\Math\MathExpressionBuilder;
 use Pucene\Component\Pucene\Compiler\Element\TermElement;
 use Pucene\Component\Pucene\Compiler\ElementInterface;
@@ -93,6 +94,11 @@ class ScoringAlgorithm
         return $this->schema;
     }
 
+    public function getQueryBuilder(): PuceneQueryBuilder
+    {
+        return $this->queryBuilder;
+    }
+
     public function getConnection(): Connection
     {
         return $this->queryBuilder->getConnection();
@@ -105,6 +111,8 @@ class ScoringAlgorithm
 
     /**
      * @param int $docCount
+     *
+     * @return float
      */
     private function calculateInverseDocumentFrequency($docCount)
     {
@@ -113,9 +121,9 @@ class ScoringAlgorithm
 
     private function getDocCountForElement(ElementInterface $element)
     {
-        $queryBuilder = (new PuceneQueryBuilder($this->queryBuilder->getConnection(), $this->schema))->select(
-                'count(document.id) as count'
-            )->from($this->schema->getDocumentsTableName(), 'document');
+        $queryBuilder = (new PuceneQueryBuilder($this->queryBuilder->getConnection(), $this->schema))
+            ->select('count(document.id) as count')
+            ->from($this->schema->getDocumentsTableName(), 'document');
 
         $expression = $this->interpreterPool->get(get_class($element))->interpret($element, $queryBuilder);
         if ($expression) {
@@ -131,9 +139,9 @@ class ScoringAlgorithm
             return $this->docCount;
         }
 
-        $queryBuilder = (new PuceneQueryBuilder($this->queryBuilder->getConnection(), $this->schema))->select(
-                'count(document.id) as count'
-            )->from($this->schema->getDocumentsTableName(), 'document');
+        $queryBuilder = (new PuceneQueryBuilder($this->queryBuilder->getConnection(), $this->schema))
+            ->select('count(document.id) as count')
+            ->from($this->schema->getDocumentsTableName(), 'document');
 
         return $this->docCount = (int) $queryBuilder->execute()->fetchColumn();
     }
